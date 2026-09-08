@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Flash Report</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --paper:#E9EDEF;
+    --card:#FFFFFF;
+    --ink:#16242B;
+    --ink-2:#5C6E77;
+    --rule:#CBD5D9;
+    --signal:#1E4F5E;
+    --caution:#B26B00;
+    --caution-bg:#FDF4E4;
+    --field:#F6F8F9;
+    --display:"Segoe UI Semibold","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --body:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:16px;
+    line-height:1.55;
+    padding:12px 12px 80px;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:780px;margin:0 auto}
+
+  /* ---- masthead ---- */
+  .masthead{
+    background:var(--card);
+    border:1px solid var(--rule);
+    border-top:4px solid var(--caution);
+    border-radius:10px 10px 0 0;
+    padding:18px 18px 14px;
+  }
+  .precedence{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--caution);
+    background:var(--caution-bg);
+    border:1px solid #EBD9B8;
+    padding:3px 9px;
+    margin-bottom:10px;
+    border-radius:4px;
+  }
+  h1{
+    font-family:var(--display);
+    font-size:26px;
+    line-height:1.1;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+    margin:0 0 4px;
+  }
+  .sub{color:var(--ink-2);font-size:13px;margin:0;line-height:1.45}
+
+  /* ---- panels ---- */
+  .panel{
+    background:var(--card);
+    border:1px solid var(--rule);
+    border-top:none;
+    padding:18px 18px;
+  }
+  .panel:last-of-type{border-radius:0 0 10px 10px}
+  .panel-head{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:7px;
+    margin-bottom:14px;
+  }
+  .idx{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--caution);
+    letter-spacing:.08em;
+    flex:none;
+  }
+  .panel-title{
+    font-family:var(--display);
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--signal);
+    margin:0;
+  }
+  .hint{
+    font-size:13px;
+    color:var(--ink-2);
+    margin:-6px 0 12px;
+    line-height:1.4;
+  }
+
+  /* ---- fields ---- */
+  label{
+    display:block;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-2);
+    margin-bottom:4px;
+  }
+  input[type=text],input[type=datetime-local],select,textarea{
+    width:100%;
+    font-family:var(--body);
+    font-size:16px;
+    color:var(--ink);
+    background:var(--field);
+    border:1px solid var(--rule);
+    border-radius:6px;
+    padding:10px 12px;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  select{
+    appearance:auto;
+    -webkit-appearance:menulist;
+    height:44px;
+  }
+  input[type=datetime-local]{
+    appearance:auto;
+    -webkit-appearance:auto;
+    height:44px;
+  }
+  textarea{min-height:100px;resize:vertical;line-height:1.5}
+  input:focus,select:focus,textarea:focus,button:focus{
+    outline:2px solid var(--signal);
+    outline-offset:1px;
+  }
+  /* sub-fields (5M, split boxes) */
+  .sub-list{display:flex;flex-direction:column;gap:12px}
+  .sub-list textarea{min-height:56px}
+  .sub-list label{
+    color:var(--signal);
+    font-family:var(--display);
+    letter-spacing:.12em;
+  }
+
+  /* checkbox row */
+  .check-row{display:flex;gap:20px;align-items:flex-start;margin-bottom:12px}
+  .check-row label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    text-transform:none;
+    font-size:15px;
+    color:var(--ink);
+    cursor:pointer;
+    letter-spacing:0;
+  }
+  .check-row input[type=checkbox]{
+    width:20px;height:20px;accent-color:var(--signal);cursor:pointer;
+  }
+  .td-detail{margin-top:6px}
+  .td-detail[hidden]{display:none}
+
+  /* ---- output strip ---- */
+  .strip{
+    background:#0F1E24;
+    border:1px solid #0F1E24;
+    border-radius:6px;
+    padding:16px 14px;
+    overflow-x:auto;
+    min-height:80px;
+    -webkit-overflow-scrolling:touch;
+  }
+  #out{
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.6;
+    color:#D6E2E6;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    margin:0;
+  }
+  .bar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin-top:14px;
+  }
+  button{
+    font-family:var(--body);
+    font-size:14px;
+    padding:10px 20px;
+    border-radius:8px;
+    cursor:pointer;
+    border:1px solid var(--signal);
+    -webkit-appearance:none;
+  }
+  .btn-primary{background:var(--signal);color:#fff}
+  .btn-primary:active{background:#173D49}
+  .btn-ghost{background:transparent;color:var(--signal)}
+  .btn-ghost:active{background:#EAF1F3}
+  .toggle{
+    margin-left:auto;
+    font-size:13px;
+    color:var(--ink-2);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .toggle select{
+    font-family:var(--body);
+    font-size:13px;
+    padding:6px 10px;
+    border:1px solid var(--rule);
+    border-radius:6px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .status{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.06em;
+    color:var(--signal);
+    min-height:18px;
+    margin-top:8px;
+  }
+  .warn{
+    background:var(--caution-bg);
+    border-left:3px solid var(--caution);
+    padding:9px 13px;
+    font-size:13px;
+    color:#6D4300;
+    margin-bottom:12px;
+    border-radius:4px;
+  }
+  .warn[hidden]{display:none}
+  .js-err{
+    background:#FDE8E8;
+    border-left:3px solid #C53030;
+    padding:10px 14px;
+    font-size:13px;
+    color:#7B1A1A;
+    margin-bottom:12px;
+    border-radius:4px;
+  }
+  .js-err[hidden]{display:none}
+  .foot{
+    font-size:11px;
+    color:var(--ink-2);
+    text-align:center;
+    margin-top:16px;
+    line-height:1.6;
+  }
+  @media(max-width:560px){
+    .toggle{margin-left:0;width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="precedence">Precedence &middot; Flash</span>
+    <h1>Flash Report</h1>
+    <p class="sub">Fill in the sections below. The summary builds as you type &mdash; copy and paste it into your Teams chat.</p>
+  </header>
+
+  <!-- 01 occurrence summary -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">01</span>
+      <h2 class="panel-title">Occurrence Summary</h2>
+    </div>
+    <textarea id="q_occ"></textarea>
+  </section>
+
+  <!-- 02 pilot debrief -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">02</span>
+      <h2 class="panel-title">Pilot Debrief</h2>
+    </div>
+    <textarea id="q_deb"></textarea>
+  </section>
+
+  <!-- 03 preliminary assessment - 5M -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">03</span>
+      <h2 class="panel-title">Preliminary Assessment &mdash; Contributory 5M</h2>
+    </div>
+    <p class="hint">State which 5M is contributory with brief description. Leave blank if not contributory &mdash; it will read as &ldquo;Nil&rdquo; in the summary.</p>
+    <div class="sub-list">
+      <div><label for="m_man">Man</label><textarea id="m_man"></textarea></div>
+      <div><label for="m_machine">Machine</label><textarea id="m_machine"></textarea></div>
+      <div><label for="m_mission">Mission</label><textarea id="m_mission"></textarea></div>
+      <div><label for="m_medium">Medium</label><textarea id="m_medium"></textarea></div>
+      <div><label for="m_management">Management</label><textarea id="m_management"></textarea></div>
+    </div>
+  </section>
+
+  <!-- 04 preliminary technical assessment -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">04</span>
+      <h2 class="panel-title">Preliminary Technical Assessment (if applicable)</h2>
+    </div>
+    <div class="sub-list">
+      <div><label for="q_prc">Possible root causes (list down will do)</label><textarea id="q_prc"></textarea></div>
+      <div><label for="q_mlrc">Most likely root cause (if known)</label><textarea id="q_mlrc"></textarea></div>
+    </div>
+  </section>
+
+  <!-- 05 agreed course of actions -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">05</span>
+      <h2 class="panel-title">Agreed Course of Actions</h2>
+    </div>
+    <p class="hint">Brief description of next steps, e.g. telecon with OEM, further troubleshooting, engine ground run etc.</p>
+    <textarea id="q_coa"></textarea>
+  </section>
+
+  <!-- 06 ops impact assessment -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">06</span>
+      <h2 class="panel-title">Ops Impact Assessment</h2>
+    </div>
+    <div class="sub-list">
+      <div>
+        <label for="q_safety">Safety implication</label>
+        <select id="q_safety">
+          <option value="">Select&hellip;</option>
+          <option value="YES">Yes</option>
+          <option value="NO">No</option>
+        </select>
+      </div>
+      <div>
+        <label for="q_fleet">Fleet implication</label>
+        <select id="q_fleet">
+          <option value="">Select&hellip;</option>
+          <option value="NO">No</option>
+          <option value="YES (All Aircraft)">Yes (All Aircraft)</option>
+          <option value="YES (Specific Tail/Variant)">Yes (Specific Tail/Variant)</option>
+        </select>
+      </div>
+      <div id="fleet_tail_detail" hidden>
+        <label for="q_fleet_tail">Specify affected tail / variant</label>
+        <input type="text" id="q_fleet_tail" autocomplete="off">
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 suspension of flying -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">07</span>
+      <h2 class="panel-title">Suspension of Flying</h2>
+    </div>
+    <div class="sub-list">
+      <div>
+        <label for="q_hold_type">Status</label>
+        <select id="q_hold_type">
+          <option value="">Select&hellip;</option>
+          <option value="No Suspension">No Suspension</option>
+          <option value="Safety Timeout">Safety Timeout</option>
+          <option value="Temp Hold (Training)">Temp Hold (Training)</option>
+          <option value="Temp Hold (Ops)">Temp Hold (Ops)</option>
+        </select>
+      </div>
+      <div>
+        <label for="q_hold_dur">For how long? (hold until)</label>
+        <input type="datetime-local" id="q_hold_dur">
+      </div>
+      <div><label for="q_hold_ops">Any Ops duties affected? (Redact accordingly)</label><textarea id="q_hold_ops" style="min-height:48px"></textarea></div>
+    </div>
+  </section>
+
+  <!-- 08 follow-up TD -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">08</span>
+      <h2 class="panel-title">Will there be a follow-up TD?</h2>
+    </div>
+    <div class="check-row">
+      <label><input type="checkbox" id="td_yes"> Yes</label>
+      <label><input type="checkbox" id="td_no"> No</label>
+    </div>
+    <div class="td-detail" id="td_detail" hidden>
+      <label for="q_td_info">If yes, when and where, chaired by who?</label>
+      <textarea id="q_td_info" style="min-height:56px"></textarea>
+    </div>
+  </section>
+
+  <!-- 09 other info -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">09</span>
+      <h2 class="panel-title">Any other relevant info</h2>
+    </div>
+    <p class="hint">e.g. safety time-out declared</p>
+    <textarea id="q_other"></textarea>
+  </section>
+
+  <!-- output -->
+  <section class="panel">
+    <div class="panel-head">
+      <span class="idx">&#9656;</span>
+      <h2 class="panel-title">Summary to paste</h2>
+    </div>
+    <div class="js-err" id="js-error" hidden></div>
+    <div class="warn" id="warn" hidden></div>
+    <div class="strip"><div id="out">Loading&hellip;</div></div>
+    <div class="bar">
+      <button type="button" class="btn-primary" id="copy">Copy summary</button>
+      <button type="button" class="btn-ghost" id="clear">Clear form</button>
+      <span class="toggle">
+        <label for="fmt" style="margin:0">Format</label>
+        <select id="fmt">
+          <option value="plain">Plain text</option>
+          <option value="md">Markdown</option>
+        </select>
+      </span>
+    </div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">
+    Runs entirely in your browser. Nothing is sent anywhere.<br>
+    Closing this page discards the report.
+  </p>
+
+</div>
+
+<script>
+function flashReportInit(){
+  try{
+
+  /* Tell Telegram the app is ready */
+  if(window.Telegram && window.Telegram.WebApp){
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+  }
+
+  var textIds = [
+    "q_occ","q_deb",
+    "m_man","m_machine","m_mission","m_medium","m_management",
+    "q_prc","q_mlrc",
+    "q_coa",
+    "q_hold_ops",
+    "q_td_info",
+    "q_other"
+  ];
+  var el = {};
+  var i, node;
+  for(i = 0; i < textIds.length; i++){
+    node = document.getElementById(textIds[i]);
+    if(node) el[textIds[i]] = node;
+  }
+
+  /* dropdowns and datetime that need onchange instead of oninput */
+  var selSafety      = document.getElementById("q_safety");
+  var selFleet       = document.getElementById("q_fleet");
+  var fleetTailBox   = document.getElementById("fleet_tail_detail");
+  var inpFleetTail   = document.getElementById("q_fleet_tail");
+  var selHoldType    = document.getElementById("q_hold_type");
+  var inpHoldDur     = document.getElementById("q_hold_dur");
+
+  var tdYes    = document.getElementById("td_yes");
+  var tdNo     = document.getElementById("td_no");
+  var tdDetail = document.getElementById("td_detail");
+  var out      = document.getElementById("out");
+  var warn     = document.getElementById("warn");
+  var statusEl = document.getElementById("status");
+  var fmt      = document.getElementById("fmt");
+  var jsErr    = document.getElementById("js-error");
+
+  if(!out){
+    if(jsErr){ jsErr.hidden = false; jsErr.innerText = "Error: summary element not found."; }
+    return;
+  }
+
+  /* ---- TD checkbox logic ---- */
+  if(tdYes) tdYes.onchange = function(){
+    if(tdYes.checked){ if(tdNo) tdNo.checked = false; if(tdDetail) tdDetail.hidden = false; }
+    else{ if(tdDetail) tdDetail.hidden = true; }
+    render();
+  };
+  if(tdNo) tdNo.onchange = function(){
+    if(tdNo.checked){ if(tdYes) tdYes.checked = false; if(tdDetail) tdDetail.hidden = true; }
+    render();
+  };
+
+  var MS = [
+    { id:"m_man",        label:"Man" },
+    { id:"m_machine",    label:"Machine" },
+    { id:"m_mission",    label:"Mission" },
+    { id:"m_medium",     label:"Medium" },
+    { id:"m_management", label:"Management" }
+  ];
+
+  function v(id){ return el[id] ? el[id].value.replace(/^\s+|\s+$/g,"") : ""; }
+  function sv(sel){ return sel ? sel.value : ""; }
+
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  /* "2026-09-29T14:30" -> "Till 29 1430 Sep 26" */
+  function fmtHoldDate(s){
+    if(!s) return "";
+    var parts = s.split("T");
+    var d = parts[0].split("-");
+    if(d.length !== 3) return s;
+    var dd = d[2];
+    var mm = MONTHS[parseInt(d[1],10) - 1] || d[1];
+    var yy = d[0].slice(2);
+    var hhmm = parts[1] ? parts[1].slice(0,5).replace(":","") : "0000";
+    return "Till " + dd + " " + hhmm + "H " + mm + " " + yy;
+  }
+
+  function build(){
+    var md = fmt && fmt.value === "md";
+    var L = [];
+    function head(t){ L.push(md ? "**" + t + "**" : t); }
+    function gap(){ L.push(""); }
+
+    head("FLASH REPORT");
+
+    gap();
+    head("1. OCCURRENCE SUMMARY");
+    L.push(v("q_occ") || "- not provided -");
+
+    gap();
+    head("2. PILOT DEBRIEF");
+    L.push(v("q_deb") || "- not provided -");
+
+    gap();
+    head("3. PRELIMINARY ASSESSMENT - CONTRIBUTORY 5M");
+    for(var m = 0; m < MS.length; m++){
+      L.push("   " + MS[m].label + ": " + (v(MS[m].id) || "Nil"));
+    }
+
+    gap();
+    head("4. PRELIMINARY TECHNICAL ASSESSMENT (IF APPLICABLE)");
+    L.push("   Possible Root Causes: " + (v("q_prc") || "- not provided -"));
+    L.push("   Most Likely Root Cause: " + (v("q_mlrc") || "- not provided -"));
+
+    gap();
+    head("5. AGREED COURSE OF ACTIONS");
+    L.push(v("q_coa") || "- not provided -");
+
+    gap();
+    head("6. OPS IMPACT ASSESSMENT");
+    L.push("   Safety Implication: " + (sv(selSafety) || "YES/NO"));
+    var fleetVal = sv(selFleet) || "YES/NO";
+    if(sv(selFleet) === "YES (Specific Tail/Variant)"){
+      var tailVal = inpFleetTail ? inpFleetTail.value.replace(/^\s+|\s+$/g,"") : "";
+      if(tailVal) fleetVal = fleetVal + " — " + tailVal;
+    }
+    L.push("   Fleet Implication: " + fleetVal);
+
+    gap();
+    head("7. SUSPENSION OF FLYING");
+    L.push("   Status: " + (sv(selHoldType) || "No Suspension/Safety Timeout/Temp Hold"));
+    var durVal = inpHoldDur ? inpHoldDur.value.replace(/^\s+|\s+$/g,"") : "";
+    L.push("   Duration: " + (durVal ? fmtHoldDate(durVal) : "Nil"));
+    L.push("   Ops Duties Affected: " + (v("q_hold_ops") || "Nil"));
+
+    gap();
+    head("8. FOLLOW-UP TD");
+    if(tdYes && tdYes.checked){
+      L.push("   Yes" + (v("q_td_info") ? " — " + v("q_td_info") : ""));
+    } else if(tdNo && tdNo.checked){
+      L.push("   No");
+    } else {
+      L.push("   - not indicated -");
+    }
+
+    gap();
+    head("9. OTHER RELEVANT INFO");
+    L.push(v("q_other") || "Nil");
+
+    gap();
+    L.push("Preliminary information - not a formal investigation finding.");
+
+    return L.join("\n");
+  }
+
+  function render(){
+    try{
+      var text = build();
+      if(typeof out.innerText !== "undefined") out.innerText = text;
+      else out.textContent = text;
+      if(statusEl) statusEl.innerText = "";
+      if(warn) warn.hidden = true;
+    }catch(e){
+      if(jsErr){ jsErr.hidden = false; jsErr.innerText = "Render error: " + e.message; }
+    }
+  }
+
+  for(i = 0; i < textIds.length; i++){
+    if(el[textIds[i]]) el[textIds[i]].oninput = render;
+  }
+  if(fmt) fmt.onchange = render;
+  if(selSafety) selSafety.onchange = render;
+  if(selFleet) selFleet.onchange = function(){
+    if(fleetTailBox){
+      fleetTailBox.hidden = (sv(selFleet) !== "YES (Specific Tail/Variant)");
+    }
+    render();
+  };
+  if(inpFleetTail) inpFleetTail.oninput = render;
+  if(selHoldType) selHoldType.onchange = render;
+  if(inpHoldDur) inpHoldDur.onchange = render;
+
+  /* ---- clipboard ---- */
+  var copyBtn = document.getElementById("copy");
+  if(copyBtn) copyBtn.onclick = function(){
+    var text = build();
+    /* iOS-safe copy: select-execCommand first, clipboard API fallback */
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly","");
+    ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.setSelectionRange(0, ta.value.length);
+    var ok = false;
+    try{ ok = document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(ta);
+
+    if(!ok && navigator.clipboard){
+      navigator.clipboard.writeText(text).then(function(){
+        if(statusEl) statusEl.innerText = "Copied. Paste into your Teams chat.";
+      }).catch(function(){
+        if(statusEl) statusEl.innerText = "Long-press the summary text above to select and copy manually.";
+      });
+    } else {
+      if(statusEl) statusEl.innerText = ok
+        ? "Copied. Paste into your Teams chat."
+        : "Long-press the summary text above to select and copy manually.";
+    }
+  };
+
+  var clearBtn = document.getElementById("clear");
+  if(clearBtn) clearBtn.onclick = function(){
+    if(!window.confirm("Clear all fields?")) return;
+    for(var j = 0; j < textIds.length; j++){
+      if(el[textIds[j]]) el[textIds[j]].value = "";
+    }
+    if(selSafety) selSafety.value = "";
+    if(selFleet) selFleet.value = "";
+    if(inpFleetTail) inpFleetTail.value = "";
+    if(fleetTailBox) fleetTailBox.hidden = true;
+    if(selHoldType) selHoldType.value = "";
+    if(inpHoldDur) inpHoldDur.value = "";
+    if(tdYes) tdYes.checked = false;
+    if(tdNo) tdNo.checked = false;
+    if(tdDetail) tdDetail.hidden = true;
+    render();
+  };
+
+  render();
+
+  }catch(err){
+    var errBox = document.getElementById("js-error");
+    if(errBox){ errBox.hidden = false; errBox.innerText = "Init error: " + err.message; }
+  }
+}
+
+/* fire on whichever event comes first */
+var _done = false;
+function _once(){ if(_done) return; _done = true; flashReportInit(); }
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", _once);
+} else { _once(); }
+window.addEventListener("load", _once);
+setTimeout(_once, 500);
+</script>
+</body>
+</html>
